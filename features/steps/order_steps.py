@@ -4,58 +4,56 @@ from src.product import Product
 from src.order_item import OrderItem
 from src.order_service import OrderService
 from src.discount import ThresholdDiscount, BuyOneGetOneDiscount
+from typing import List
 
 
 @given('no promotions are applied')
 def step_no_promotions(context):
     """設定無促銷活動"""
-    context.order_service = OrderService()
     context.promotions = []
+    context.order_service = OrderService(promotions=context.promotions)
 
 
-@given('the threshold discount promotion is configured:')
+@given('the threshold discount promotion is configured')
 def step_threshold_discount_configured(context):
     """設定門檻折扣促銷"""
-    # 如果還沒有 order_service，則創建一個
-    if not hasattr(context, 'order_service'):
-        context.order_service = OrderService()
-    
-    # 從表格中讀取門檻折扣設定
-    for row in context.table:
-        threshold = float(row['threshold'])
-        discount = float(row['discount'])
-        context.order_service.add_discount(ThresholdDiscount(threshold, discount))
+    if not hasattr(context, 'promotions'):
+        context.promotions = []
+    row = context.table[0]
+    threshold = float(row['threshold'])
+    discount = float(row['discount'])
+    context.promotions.append(ThresholdDiscount(threshold, discount))
+    context.order_service = OrderService(promotions=context.promotions)
 
 
 @given('the buy one get one promotion for cosmetics is active')
 def step_bogo_cosmetics_active(context):
     """設定化妝品買一送一促銷"""
-    # 如果還沒有 order_service，則創建一個
-    if not hasattr(context, 'order_service'):
-        context.order_service = OrderService()
-    
-    context.order_service.add_discount(BuyOneGetOneDiscount('cosmetics'))
+    if not hasattr(context, 'promotions'):
+        context.promotions = []
+    context.promotions.append(BuyOneGetOneDiscount(category="cosmetics"))
+    context.order_service = OrderService(promotions=context.promotions)
 
 
-@when('a customer places an order with:')
+@when('a customer places an order with')
 def step_customer_places_order(context):
     """客戶下訂單"""
     items = []
-    
+
     for row in context.table:
         product_name = row['productName']
         quantity = int(row['quantity'])
         unit_price = float(row['unitPrice'])
         category = row.get('category', '')
-        
+
         product = Product(name=product_name, unit_price=unit_price, category=category)
         order_item = OrderItem(product=product, quantity=quantity)
         items.append(order_item)
-    
+
     context.order = context.order_service.checkout(items)
 
 
-@then('the order summary should be:')
+@then('the order summary should be')
 def step_order_summary_should_be(context):
     """驗證訂單摘要"""
     row = context.table[0]
@@ -76,7 +74,7 @@ def step_order_summary_should_be(context):
             f"Expected discount {expected_discount}, but got {context.order.discount}"
 
 
-@then('the customer should receive:')
+@then('the customer should receive')
 def step_customer_should_receive(context):
     """驗證客戶收到的商品"""
     expected_items = {}

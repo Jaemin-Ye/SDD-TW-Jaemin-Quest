@@ -1,21 +1,16 @@
 """OrderItem entity"""
+from dataclasses import dataclass
 from src.product import Product
 
 
+@dataclass
 class OrderItem:
     """訂單項目實體類別"""
-    
-    def __init__(self, product: Product, quantity: int):
-        """
-        初始化訂單項目
-        
-        Args:
-            product: 商品
-            quantity: 數量
-        """
-        if quantity <= 0:
-            raise ValueError("數量必須大於 0")
-        
-        self.product = product
-        self.quantity = quantity
+    product: Product
+    quantity: int
+
+    @property
+    def subtotal(self) -> float:
+        """計算小計"""
+        return self.product.unit_price * self.quantity
 
